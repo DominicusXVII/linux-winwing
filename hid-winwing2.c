@@ -316,23 +316,15 @@ static int winwing_probe(struct hid_device *hdev,
 
 static void winwing_remove(struct hid_device *hdev)
 {
-	struct winwing_drv_data *data = (struct winwing_drv_data *) hid_get_drvdata(hdev);
+	struct winwing_drv_data *data;
 
-	if (!data)
-		return;
-	
-	mutex_lock(&data->lock);
-	data->dead = true;
-	mutex_unlock(&data->lock);
+	data = (struct winwing_drv_data *) hid_get_drvdata(hdev);
 
-	cancel_work_sync(&data->rumble_work);
-
-	hid_set_drvdata(hdev, NULL);
+	if (data)
+		cancel_work_sync(&data->rumble_work);
 
 	hid_hw_close(hdev);
 	hid_hw_stop(hdev);
-
-	kfree(data);
 }
 
 static int winwing_input_configured(struct hid_device *hdev,
@@ -361,7 +353,7 @@ static const struct hid_device_id winwing_devices[] = {
 MODULE_DEVICE_TABLE(hid, winwing_devices);
 
 static struct hid_driver winwing_driver = {
-	.name = "winwing2",
+	.name = "hid_winwing2",
 	.id_table = winwing_devices,
 	.input_mapping = winwing_input_mapping,
 	.probe = winwing_probe,

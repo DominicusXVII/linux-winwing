@@ -7,7 +7,7 @@ default:
 	$(MAKE) -C $(KDIR) M=$(SRC) modules
 
 install:
-	$(MAKE) -C $(KDIR) M=$(SRC) modules_install
+	sudo cp *.ko $(MDIR)/kernel/drivers/hid
 	sudo depmod -a
 
 clean:
