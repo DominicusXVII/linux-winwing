@@ -45,6 +45,7 @@ struct winwing_drv_data {
 	__u16 rumble_right;
 	int grip_buttons;
 	unsigned int num_leds;
+	bool dead;
 	struct winwing_led leds[];
 };
 
@@ -175,6 +176,9 @@ static int winwing_input_mapping(struct hid_device *hdev,
 
 static int winwing_haptic_rumble(struct winwing_drv_data *data, __u16 left, __u16 right)
 {
+  if (!data || data->dead)
+      return 0;
+
 	__u8 *buf = data->report_buf;
 	int ret;
 
@@ -233,6 +237,9 @@ static void winwing_haptic_rumble_cb(struct work_struct *work)
 {
 	struct winwing_drv_data *data = container_of(work, struct winwing_drv_data, rumble_work);
 
+  if (!data || data->dead)
+      return;
+
 	winwing_haptic_rumble(data, data->rumble_left, data->rumble_right);
 }
 
@@ -240,6 +247,9 @@ static int winwing_play_effect(struct input_dev *dev, void *context,
 				struct ff_effect *effect)
 {
 	struct winwing_drv_data *data = (struct winwing_drv_data *) context;
+
+	if (!data || data->dead)
+		return 0;
 
 	if (effect->type != FF_RUMBLE)
 		return 0;
@@ -310,11 +320,19 @@ static void winwing_remove(struct hid_device *hdev)
 
 	if (!data)
 		return;
+	
+	mutex_lock(&data->lock);
+	data->dead = true;
+	mutex_unlock(&data->lock);
 
 	cancel_work_sync(&data->rumble_work);
 
+	hid_set_drvdata(hdev, NULL);
+
 	hid_hw_close(hdev);
 	hid_hw_stop(hdev);
+
+	kfree(data);
 }
 
 static int winwing_input_configured(struct hid_device *hdev,

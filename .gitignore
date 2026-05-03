@@ -5,5 +5,10 @@
 *.mod
 *.mod.c
 
+#config files
+.vscode
+.clangd
+compile_commands.json
+
 Module.symvers
 modules.order
